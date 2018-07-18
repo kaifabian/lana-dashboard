@@ -1,5 +1,7 @@
 from django.conf.urls import url
+
 from lana_dashboard.lana_data import views
+
 
 urlpatterns = [
 	url(r'^institutions/$', views.list_institutions, name='institutions'),
@@ -7,7 +9,7 @@ urlpatterns = [
 	url(r'^institutions/(?P<code>.+)/autonomous_systems/$', views.list_institution_autonomous_systems, name='institution-autonomous_systems'),
 	url(r'^institutions/(?P<code>.+)/tunnels/$', views.list_institution_tunnels, name='institution-tunnels'),
 	url(r'^institutions/(?P<code>.+)/$', views.show_institution, name='institution-details'),
-	url(r'^institutions/(?P<code>.+)/delete', views.delete_institution, name='institution-delete'),
+	url(r'^institutions/(?P<code>.+)/delete$', views.delete_institution, name='institution-delete'),
 	url(r'^institutions/(?P<code>.+)/edit$', views.edit_institution, name='institution-edit'),
 
 	url(r'^autonomous-systems/$', views.list_autonomous_systems, name='autonomous_systems'),
@@ -27,11 +29,16 @@ urlpatterns = [
 	url(r'^ipv4/(?P<network>.+)/delete$', views.delete_ipv4, name='ipv4-delete'),
 	url(r'^ipv4/(?P<network>.+)/edit$', views.edit_ipv4, name='ipv4-edit'),
 
+	url(r'^peerings/create$', views.edit_peering, name='peering-create'),
+	url(r'^peerings/AS(?P<as_number1>\d+)-AS(?P<as_number2>\d+)/$', views.show_peering, name='peering-details'),
+	url(r'^peerings/AS(?P<as_number1>\d+)-AS(?P<as_number2>\d+)/delete$', views.delete_peering, name='peering-delete'),
+	url(r'^peerings/AS(?P<as_number1>\d+)-AS(?P<as_number2>\d+)/edit$', views.edit_peering, name='peering-edit'),
+
 	url(r'^tunnels/$', views.list_tunnels, name='tunnels'),
 	url(r'^tunnels/create$', views.edit_tunnel, name='tunnel-create'),
 	url(r'^tunnels/create/form$', views.generate_tunnel_form, name='tunnel-create-form'),
 	url(r'^tunnels/AS(?P<as_number1>\d+)-AS(?P<as_number2>\d+)/$', views.show_tunnel, name='tunnel-details'),
-	url(r'^tunnels/AS(?P<as_number1>\d+)-AS(?P<as_number2>\d+)/delete', views.delete_tunnel, name='tunnel-delete'),
+	url(r'^tunnels/AS(?P<as_number1>\d+)-AS(?P<as_number2>\d+)/delete$', views.delete_tunnel, name='tunnel-delete'),
 	url(r'^tunnels/AS(?P<as_number1>\d+)-AS(?P<as_number2>\d+)/edit$', views.edit_tunnel, name='tunnel-edit'),
 	url(r'^tunnels/AS(?P<as_number1>\d+)-AS(?P<as_number2>\d+)/autonomous_systems/$', views.list_tunnel_autonomous_systems, name='tunnel-autonomous_systems'),
 

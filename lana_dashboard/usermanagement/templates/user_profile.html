@@ -44,6 +44,7 @@
 			{% if profile.username == user.username %}
 			<p>
 				<a class="btn btn-primary" href="{% url 'usermanagement:profile-edit' profile.username %}">Edit user profile</a>
+				<a class="btn btn-secondary" href="{% url 'usermanagement:tokens' profile.username %}">Tokens</a>
 			</p>
 			{% endif %}
 		</div>
@@ -51,7 +52,7 @@
 
 	<h2>Institutions</h2>
 	<div class="row">
-		<div class="col-xs-12 col-lg-8">
+		<div class="col-xs-12">
 			{% include 'tables/institution_list.html' with dont_link_username=profile.username empty_message=profile.get_full_name|add:' does not manage any Institutions.' %}
 		</div>
 	</div>

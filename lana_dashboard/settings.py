@@ -39,6 +39,8 @@ INSTALLED_APPS = [
 	'django.contrib.staticfiles',
 	'colorfield',
 	'crispy_forms',
+	'djcelery_email',
+	'kombu.transport.django',
 	'netfields',
 	'rest_framework',
 	'static_precompiler',
@@ -155,12 +157,22 @@ REST_FRAMEWORK = {
 	'DEFAULT_AUTHENTICATION_CLASSES': (
 		'rest_framework.authentication.BasicAuthentication',
 		'rest_framework.authentication.SessionAuthentication',
+		'lana_dashboard.lana_api.auth.TokenAuthentication',
 	),
 	'DEFAULT_PERMISSION_CLASSES': (
 		'rest_framework.permissions.IsAuthenticated',
 	),
 	'VIEW_NAME_FUNCTION': 'lana_dashboard.lana_api.views.get_view_name',
 }
+
+# Celery settings
+BROKER_URL = 'django://'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+
+# Email settings
+EMAIL_BACKEND = 'djcelery_email.backends.CeleryEmailBackend'
+CELERY_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # LANA settings
 

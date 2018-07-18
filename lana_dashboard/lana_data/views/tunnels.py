@@ -1,12 +1,16 @@
 from crispy_forms.helper import FormHelper
 from crispy_forms.utils import render_crispy_form
 from django.contrib.auth.decorators import login_required
+from django.core import mail
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Q
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.template.context_processors import csrf
+from django.template.loader import render_to_string
+from django.utils.translation import ugettext as _
+from django.views.decorators.http import require_POST
 from django.views.decorators.vary import vary_on_headers
 
 from lana_dashboard.lana_data.forms import (
@@ -27,6 +31,7 @@ from lana_dashboard.lana_data.utils import (
 	get_object_for_view_or_404,
 	list_objects_for_view,
 )
+from lana_dashboard.usermanagement.utils import send_email
 
 
 @login_required
@@ -68,9 +73,8 @@ def list_tunnels_web(request):
 
 
 @login_required
+@require_POST
 def delete_tunnel(request, as_number1, as_number2):
-	if request.method != 'POST':
-		raise Http404
 	tunnel = get_object_for_edit_or_40x(Tunnel, request, select_related=[
 		'endpoint1',
 		'endpoint2',
@@ -136,18 +140,43 @@ def edit_tunnel(request, as_number1=None, as_number2=None):
 					error_message = "A tunnel between these two Autonomous Systems already exists."
 
 				if error_message:
-					endpoint1_form.add_error('autonomous_system', error_message)
-					endpoint2_form.add_error('autonomous_system', error_message)
+					endpoint1_form.add_error('host', error_message)
+					endpoint2_form.add_error('host', error_message)
 				else:
-					endpoint1.save()
-					endpoint2.save()
-					tunnel = tunnel_form.save(commit=False)
-					tunnel.endpoint1 = endpoint1
-					tunnel.endpoint2 = endpoint2
-					if tunnel.endpoint1.autonomous_system.as_number > tunnel.endpoint2.autonomous_system.as_number:
-						tunnel.endpoint1, tunnel.endpoint2 = tunnel.endpoint2, tunnel.endpoint1
-					tunnel.prepare_save()
-					tunnel.save()
+					with transaction.atomic():
+						endpoint1.save()
+						endpoint2.save()
+						tunnel = tunnel_form.save(commit=False)
+						tunnel.endpoint1 = endpoint1
+						tunnel.endpoint2 = endpoint2
+						if tunnel.endpoint1.autonomous_system.as_number > tunnel.endpoint2.autonomous_system.as_number:
+							tunnel.endpoint1, tunnel.endpoint2 = tunnel.endpoint2, tunnel.endpoint1
+						tunnel.prepare_save()
+						tunnel.save()
+
+					# Send email to participating managers
+					managers = set(tunnel.endpoint1.institution.owners.all()) | set(tunnel.endpoint2.institution.owners.all())
+					managers.remove(request.user)
+					if len(managers) > 0:
+						if mode == 'create':
+							subject = _('New Tunnel between %s and %s was created')
+						else:
+							subject = _('Tunnel between %s and %s was modified')
+						subject = subject % (tunnel.endpoint1.autonomous_system, tunnel.endpoint2.autonomous_system)
+						body = render_to_string('emails/tunnel_modified.txt', {
+							'mode': mode,
+							'tunnel': tunnel,
+							'editor': request.user,
+							'url': request.build_absolute_uri(reverse('lana_data:tunnel-details', kwargs={
+								'as_number1': tunnel.endpoint1.autonomous_system.as_number,
+								'as_number2': tunnel.endpoint2.autonomous_system.as_number,
+							})),
+						})
+
+						with mail.get_connection() as connection:
+							for manager in managers:
+								send_email(manager, subject, body, connection=connection)
+
 					return HttpResponseRedirect(reverse('lana_data:tunnel-details', kwargs={
 						'as_number1': tunnel.endpoint1.autonomous_system.as_number,
 						'as_number2': tunnel.endpoint2.autonomous_system.as_number

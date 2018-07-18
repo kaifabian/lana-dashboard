@@ -2,6 +2,8 @@ language: python
 sudo: false
 python:
   - "3.4"
+addons:
+  postgresql: "9.4"
 cache: pip
 install:
   - gem install sass
@@ -12,7 +14,8 @@ script:
   # See https://github.com/andreyfedoseev/django-static-precompiler/issues/81
   - sed -i '/^\/\/.*@import/d' lana_dashboard/static/bootstrap/scss/_reboot.scss
 
+  - python manage.py lint
   - bash -c "! python manage.py makemigrations -e --dry-run"
-  - coverage run manage.py test lana_dashboard
+  - coverage run manage.py test lana_dashboard.lana_data.tests
 after_success:
   - coveralls

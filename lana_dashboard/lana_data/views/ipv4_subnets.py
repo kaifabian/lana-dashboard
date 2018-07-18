@@ -1,15 +1,15 @@
-from ipaddress import ip_network
-
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 
 from lana_dashboard.lana_data.forms import IPv4SubnetForm
-from lana_dashboard.lana_data.models import Institution, IPv4Subnet
+from lana_dashboard.lana_data.models import Host, Institution, IPv4Subnet
 from lana_dashboard.lana_data.utils import (
 	get_object_for_edit_or_40x,
 	get_object_for_view_or_404,
@@ -30,9 +30,8 @@ def list_ipv4(request):
 
 
 @login_required
+@require_POST
 def delete_ipv4(request, network):
-	if request.method != 'POST':
-		raise PermissionDenied
 	subnet = get_object_for_edit_or_40x(IPv4Subnet, request, network=network)
 
 	subnet.delete()
@@ -94,8 +93,11 @@ def show_ipv4(request, network):
 	except ValidationError:
 		raise Http404
 
+	hosts = list_objects_for_view(Host, request, Q(internal_ipv4__net_contained_or_equal=subnet.network) | Q(tunnel_ipv4__net_contained_or_equal=subnet.network))
+
 	return render(request, 'ipv4_details.html', {
 		'header_active': 'ipv4',
 		'subnet': subnet,
+		'hosts': hosts,
 		'can_edit': subnet.can_edit(request.user),
 	})
